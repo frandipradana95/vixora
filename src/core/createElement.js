@@ -36,7 +36,7 @@ const createElement = (type, props = {}, ...children) => {
 
 	children = validationChildren(children);
 
-	if (typeof type === "function") {
+	if (hasFunction(type)) {
 		return type({
 			...props,
 			children,
