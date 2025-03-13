@@ -1,3 +1,4 @@
+import { setUpdate } from "./dom";
 import {
 	hasArray,
 	hasFunction,
@@ -8,8 +9,6 @@ import {
 
 let states = [];
 let stateIndex = 0;
-let currentComponent = null;
-
 /**
  *
  * @param {any} initialValue
@@ -43,37 +42,16 @@ export const useState = (initialValue) => {
 		if (Object.is(states[currentIndex], newValue)) return;
 
 		states[currentIndex] = newValue;
-		getCurrentComponent();
-		// stateIndex = 0; // Reset index sebelum render ulang
-
+		// currentComponent();
+		setUpdate();
+		stateIndex = 0;
 		// setCurrentComponent(() => currentComponent());
 		// currentComponent(); // Re-render komponen
 	};
 
 	const value = states[currentIndex]; // Ambil nilai langsung
 	stateIndex++; // Pindah ke state berikutnya
-
 	return [value, setState]; // Kembalikan nilai langsung, bukan fungsi
-};
-
-/**
- * execute currentComponent agar hot reload
- */
-export const getCurrentComponent = () => {
-	stateIndex = 0;
-	currentComponent();
-};
-
-/**
- *
- * @param {function} component
- */
-export const setCurrentComponent = (component) => {
-	if (!hasFunction(component)) {
-		throw new Error("Invalid component: must be a function.");
-	}
-	currentComponent = component;
-	stateIndex = 0;
 };
 
 /**
@@ -102,7 +80,9 @@ export const useGlobalState = (store, key) => {
 	}
 	const [, setUpdate] = useState(0);
 	const update = () => setUpdate((prev) => prev + 1);
+	// Subscribe ke perubahan state
+	const unsubscribe = store.subscribe(update);
+	// setCurrentComponent(() => unsubscribe());
 
-	store.subscribe(update);
 	return [store.getState()[key], (value) => store.setState({ [key]: value })];
 };

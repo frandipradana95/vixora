@@ -6,7 +6,9 @@ import {
 	hasObject,
 	hasString,
 } from "./helpers.js";
-import { setCurrentComponent } from "./hooks.js";
+let previousVDOM = null;
+let rootContainer = null;
+let currentComponent = null;
 
 /**
  *
@@ -14,19 +16,39 @@ import { setCurrentComponent } from "./hooks.js";
  * @param {HTMLElement} container
  */
 const renderer = (component, container) => {
-	setCurrentComponent(() => {
-		stateIndex = 0; // Reset state index setiap kali render ulang
-		container.innerHTML = ""; // Hapus elemen lama
-		const vdom = component();
-		mount(vdom, container);
-	});
-	container.innerHTML = "";
-
+	const newVDOM = component();
+	if (!previousVDOM) {
+		mount(newVDOM, container);
+		rootContainer = container;
+		previousVDOM = newVDOM;
+	} else {
+		updateElement(container, previousVDOM, newVDOM);
+	}
 	setCurrentComponent(() => render(component, container));
-
-	const vdom = component();
-	mount(vdom, container);
 };
+
+export const setUpdate = () => {
+	if (currentComponent) {
+		currentComponent();
+	}
+};
+
+/**
+ *
+ * @param {function} component
+ */
+export const setCurrentComponent = (component) => {
+	if (!hasFunction(component)) {
+		throw new Error("Invalid component: must be a function.");
+	}
+	if (!currentComponent) {
+		currentComponent = component;
+	} else {
+		previousVDOM = currentComponent;
+		currentComponent = component;
+	}
+};
+
 /**
  *
  * @param {function} component
@@ -54,6 +76,7 @@ export const render = (component, container) => {
 	/**
 	 * Execute DOM
 	 */
+	container.innerHTML = "";
 	renderer(component, container);
 };
 /**
@@ -115,7 +138,7 @@ const mounted = (vdom, container) => {
  * @param {object} vdom
  * @param {HTMLElement} container
  */
-const mount = (vdom, container) => {
+export const mount = (vdom, container) => {
 	/**
 	 * Validation @param vdom
 	 */
@@ -135,4 +158,62 @@ const mount = (vdom, container) => {
 	}
 
 	mounted(vdom, container);
+};
+
+//////////
+
+export const updateElement = (parent, o, n, index = 0) => {
+	const exnode = parent.childNodes;
+	console.log(exnode);
+
+	if (!o) {
+		parent.appendChild(createElement(n));
+	} else if (!n) {
+		if (exnode) parent.removeChild(exnode);
+	} else if (hasDifferentNode(o, n)) {
+		try {
+			parent.replaceChild(createElement(n), exnode);
+		} catch (error) {
+			parent.replaceChild(createTextNode(n), exnode);
+		}
+	} else if (hasObject(n) && n.type) {
+		// if (exnode) updateAttributes(exnode, o, n);
+		const oldChildren = o.props?.children || [];
+		const newChildren = n.props?.children || [];
+		const maxLength = Math.max(oldChildren.length, newChildren.length);
+		for (let i = 0; i < maxLength; i++) {
+			updateElement(parent, oldChildren[i], newChildren[i], i);
+		}
+	}
+
+	// mount(o, parent);
+};
+
+const hasDifferentNode = (oldVDOM, newVDOM) => {
+	return (
+		typeof oldVDOM !== typeof newVDOM ||
+		(typeof oldVDOM === "string" && oldVDOM !== newVDOM) ||
+		oldVDOM.type !== newVDOM.type
+	);
+};
+
+const updateAttributes = (node, oldProps = {}, newProps = {}) => {
+	for (let name in oldProps) {
+		if (!(name in newProps)) {
+			node.removeAttribute(name);
+		}
+	}
+	for (let name in newProps) {
+		if (oldProps[name] !== newProps[name]) {
+			if (typeof newProps[name] === "boolean") {
+				if (newProps[name]) {
+					node.setAttribute(name, "");
+				} else {
+					node.removeAttribute(name);
+				}
+			} else {
+				node.setAttribute(name, newProps[name]);
+			}
+		}
+	}
 };

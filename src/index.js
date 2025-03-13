@@ -1,9 +1,11 @@
 import createElement from "./core/createElement";
 import { render } from "./core/dom";
-import { useState } from "./core/hooks";
+import { useGlobalState, useState } from "./core/hooks";
+import { createStore } from "./core/store";
+const store = createStore({ count: 0 });
 
 const App = () => {
-	const [count, setCount] = useState(0);
+	const [count, setCount] = useGlobalState(store, "count");
 	return createElement(
 		"div",
 		null,
