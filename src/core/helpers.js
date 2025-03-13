@@ -65,3 +65,12 @@ export const hasUndefined = (hs) => {
 export const hasHtmlElement = (hs) => {
 	return hs instanceof HTMLElement;
 };
+
+/**
+ *
+ * @param {*} hs
+ * @returns {boolean}
+ */
+export const hasArray = (hs) => {
+	return Array.isArray(hs);
+};
