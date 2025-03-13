@@ -59,7 +59,7 @@ export const useState = (initialValue) => {
 /**
  * execute currentComponent agar hot reload
  */
-const getCurrentComponent = () => {
+export const getCurrentComponent = () => {
 	stateIndex = 0;
 	currentComponent();
 };
