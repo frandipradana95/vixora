@@ -1,11 +1,8 @@
 import createElement from "./core/createElement";
+import { render } from "./core/dom";
 
-const Test = () => createElement("h1", {}, "test");
+const App = () => {
+	return createElement("div", null, createElement("h1", null, "hallo"));
+};
 
-const App = createElement(
-	createElement(Test),
-	{},
-	createElement("h1", {}, "Haloooo")
-);
-
-console.log(App);
+render(() => createElement(App), document.getElementById("root"));

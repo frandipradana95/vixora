@@ -56,3 +56,12 @@ export const hasNull = (hs) => {
 export const hasUndefined = (hs) => {
 	return hs === undefined;
 };
+
+/**
+ *
+ * @param {*} hs
+ * @returns {boolean}
+ */
+export const hasHtmlElement = (hs) => {
+	return hs instanceof HTMLElement;
+};
