@@ -1,4 +1,10 @@
-import { hasArray, hasFunction, hasNumber, hasUndefined } from "./helpers";
+import {
+	hasArray,
+	hasFunction,
+	hasNumber,
+	hasString,
+	hasUndefined,
+} from "./helpers";
 
 let states = [];
 let stateIndex = 0;
@@ -74,11 +80,29 @@ export const setCurrentComponent = (component) => {
  *
  * @param {*} store
  * @param {*} key
- * @returns
+ * @returns {[]}
  */
 export const useGlobalState = (store, key) => {
-	const [, setUpdate] = makeState(0);
+	/**
+	 * Validasi: key harus berupa string
+	 */
+	if (
+		!store ||
+		!hasFunction(store.getState) ||
+		!hasFunction(store.setState) ||
+		!hasFunction(store.subscribe)
+	) {
+		throw new Error("useGlobalState: store must be a valid store instance.");
+	}
+	/**
+	 * Validasi: key harus ada di state
+	 */
+	if (!hasString(key)) {
+		throw new Error("useGlobalState: key must be a string.");
+	}
+	const [, setUpdate] = useState(0);
 	const update = () => setUpdate((prev) => prev + 1);
+
 	store.subscribe(update);
 	return [store.getState()[key], (value) => store.setState({ [key]: value })];
 };
