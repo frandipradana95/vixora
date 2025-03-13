@@ -74,6 +74,8 @@ const validationChildren = (children) => {
 			"Invalid child type. Children must be a string, number, object, or array. try checking your code again"
 		);
 	});
+
+	return children;
 };
 
 export default createElement;
