@@ -1,18 +1,18 @@
 import { setUpdate } from "./dom";
-import {
-	hasArray,
-	hasFunction,
-	hasNumber,
-	hasString,
-	hasUndefined,
-} from "./helpers";
+import { hasArray, hasNumber, hasUndefined } from "./helpers";
 
+/**
+ * @var {object}
+ */
 let states = [];
+/**
+ * @var {boolean}
+ */
 let stateIndex = 0;
 /**
  *
  * @param {any} initialValue
- * @returns {[]}
+ * @return {object}
  */
 export const useState = (initialValue) => {
 	/**
@@ -32,57 +32,48 @@ export const useState = (initialValue) => {
 		states[currentIndex] = initialValue;
 	}
 
+	/**
+	 *
+	 * function untuk membuat / menset state global
+	 * @function setState
+	 * @param {*} newValue
+	 *
+	 */
 	const setState = (newValue) => {
+		/**
+		 * Validasi jika bukan type number
+		 * dan kembalikan error
+		 * @var currentIndex
+		 * @throw
+		 */
 		if (!hasNumber(currentIndex)) {
 			throw new Error("Internal error: Invalid state index.");
 		}
 		/**
+		 *
 		 * Cegah pembaruan jika nilai yang diberikan sama dengan nilai saat ini
+		 * @return
 		 */
 		if (Object.is(states[currentIndex], newValue)) return;
 
 		states[currentIndex] = newValue;
-		// currentComponent();
+		/**
+		 * @function setUpdate  update element dengan element baru
+		 */
 		setUpdate();
+		/**
+		 * @var stateIndex reset index jado 0
+		 */
 		stateIndex = 0;
-		// setCurrentComponent(() => currentComponent());
-		// currentComponent(); // Re-render komponen
 	};
 
-	const value = states[currentIndex]; // Ambil nilai langsung
-	stateIndex++; // Pindah ke state berikutnya
-	return [value, setState]; // Kembalikan nilai langsung, bukan fungsi
-};
-
-/**
- *
- * @param {*} store
- * @param {*} key
- * @returns {[]}
- */
-export const useGlobalState = (store, key) => {
 	/**
-	 * Validasi: key harus berupa string
+	 *
+	 * @var value Ambil nilai langsung dan masukkan dalam
+	 * @var stateIndex Pindah ke state berikutnya
+	 * @return {object} Kembalikan nilai langsung, bukan fungsi
 	 */
-	if (
-		!store ||
-		!hasFunction(store.getState) ||
-		!hasFunction(store.setState) ||
-		!hasFunction(store.subscribe)
-	) {
-		throw new Error("useGlobalState: store must be a valid store instance.");
-	}
-	/**
-	 * Validasi: key harus ada di state
-	 */
-	if (!hasString(key)) {
-		throw new Error("useGlobalState: key must be a string.");
-	}
-	const [, setUpdate] = useState(0);
-	const update = () => setUpdate((prev) => prev + 1);
-	// Subscribe ke perubahan state
-	const unsubscribe = store.subscribe(update);
-	// setCurrentComponent(() => unsubscribe());
-
-	return [store.getState()[key], (value) => store.setState({ [key]: value })];
+	const value = states[currentIndex];
+	stateIndex++;
+	return [value, setState];
 };

@@ -5,7 +5,8 @@ import { createStore } from "./core/store";
 const store = createStore({ count: 0 });
 
 const App = () => {
-	const [count, setCount] = useGlobalState(store, "count");
+	const [count, setCount] = store.getState("count");
+
 	return createElement(
 		"div",
 		null,

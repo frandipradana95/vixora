@@ -1,12 +1,25 @@
-import { hasArray, hasFunction, hasNull, hasObject } from "./helpers";
+import {
+	hasArray,
+	hasFunction,
+	hasNull,
+	hasObject,
+	hasString,
+} from "./helpers";
+import { useState } from "./hooks";
 
+/**
+ * @var {object}
+ */
 let globalState = {};
+/**
+ * @var {object}
+ */
 let listeners = [];
 
 /**
  *
  * @param {any} initialState
- * @returns {object}
+ * @return {object}
  */
 export const createStore = (initialState) => {
 	/**
@@ -21,6 +34,10 @@ export const createStore = (initialState) => {
 	}
 
 	globalState = { ...initialState };
+	/**
+	 *
+	 * @param {object} newState
+	 */
 	const setState = (newState) => {
 		/**
 		 * Validasi newState harus berupa objek
@@ -40,8 +57,27 @@ export const createStore = (initialState) => {
 		}
 	};
 
-	// const getState = () => globalState;
-	const getState = () => ({ ...globalState });
+	/**
+	 *
+	 * @param {string} key
+	 * @returns {object}
+	 */
+	const getState = (key) => {
+		let globals = { ...globalState };
+		/**
+		 * Validasi: key harus ada di state
+		 */
+		if (!hasString(key)) {
+			throw new Error("useGlobalState: key must be a string.");
+		}
+
+		const [, setUpdate] = useState(0);
+
+		const update = () => setUpdate((prev) => prev + 1);
+		subscribe(update);
+
+		return [globals[key], (value) => setState({ [key]: value })];
+	};
 
 	const subscribe = (callback) => {
 		/**
