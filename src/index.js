@@ -3,6 +3,7 @@ import { render } from "./core/dom";
 import { onMount, useFlow, useGlobalState, useState } from "./core/hooks";
 import { createStore } from "./core/store";
 import Router from "./router";
+import Link from "./router/Link";
 import Route from "./router/route";
 const store = createStore({ count: 0 });
 
@@ -20,12 +21,19 @@ const Counter = () => {
 		null,
 		createElement("h1", null, "Haloo"),
 		createElement("p", null, `count : ${count}`),
-		createElement("button", { onClick: () => setCount(count + 1) }, "tambah")
+		createElement("button", { onClick: () => setCount(count + 1) }, "tambah"),
+		createElement("br"),
+		createElement(Link, { path: "/" }, "Kembali ke Home")
 	);
 };
 
 const Home = () => {
-	return createElement("h1", {}, "Home Page");
+	return createElement(
+		"div",
+		{},
+		createElement("h1", null, "Home Component"),
+		createElement(Link, { path: "/counter" }, "Pergi ke Counter")
+	);
 };
 
 const App = () => {
