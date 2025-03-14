@@ -8,9 +8,10 @@ const App = () => {
 	const [count, setCount] = store.getState("count");
 
 	useFlow(() => {
-		console.log("Effect dijalankan! Count:", count);
-		return () => console.log("Cleanup effect untuk count:", count);
-	}, [count]);
+		fetch("https://jsonplaceholder.typicode.com/posts")
+			.then((response) => response.json())
+			.then((json) => console.log(json));
+	}, []);
 
 	return createElement(
 		"div",

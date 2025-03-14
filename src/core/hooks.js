@@ -131,3 +131,15 @@ export const triggerCleanupFlow = (component) => {
 		});
 	}
 };
+
+export const onMount = (callback) => {
+	const component = getCurrentComponent();
+	if (!component) {
+		throw new Error("onMount harus dipanggil dalam fungsi komponen!");
+	}
+
+	if (!component.__mounted) {
+		callback();
+		component.__mounted = true; // Gunakan nama yang lebih unik untuk menghindari konflik
+	}
+};
