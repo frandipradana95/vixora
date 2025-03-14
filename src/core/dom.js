@@ -6,6 +6,7 @@ import {
 	hasObject,
 	hasString,
 } from "./helpers.js";
+import { setCurrentComponentLifecycle, triggerCleanupFlow } from "./hooks.js";
 let previousVDOM = null;
 let rootContainer = null;
 let currentComponent = null;
@@ -17,6 +18,10 @@ let updateTimeout;
  * @param {HTMLElement} container
  */
 const renderer = (component, container) => {
+	if (previousVDOM) {
+		triggerCleanupFlow(component);
+	}
+	setCurrentComponent(component);
 	const newVDOM = component();
 
 	if (!previousVDOM) {
@@ -32,7 +37,7 @@ const renderer = (component, container) => {
 
 /**
  *
- * @returns {null/void}
+ * @returns {null}
  */
 export const setUpdate = () => {
 	if (!rootContainer || !previousVDOM || !hasFunction(currentComponent)) {
@@ -78,6 +83,10 @@ export const setCurrentComponent = (component) => {
 		throw new Error("Invalid component: must be a function.");
 	}
 	currentComponent = component;
+};
+
+export const getCurrentComponent = () => {
+	return currentComponent;
 };
 
 /**

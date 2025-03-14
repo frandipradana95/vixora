@@ -1,5 +1,5 @@
-import { setUpdate } from "./dom";
-import { hasArray, hasNumber, hasUndefined } from "./helpers";
+import { getCurrentComponent, setCurrentComponent, setUpdate } from "./dom";
+import { hasArray, hasFunction, hasNumber, hasUndefined } from "./helpers";
 
 /**
  * @var {object}
@@ -9,6 +9,10 @@ let states = [];
  * @var {boolean}
  */
 let stateIndex = 0;
+
+const lifecycleMap = new Map();
+const lifecycleCleanup = new Map();
+
 /**
  *
  * @param {any} initialValue
@@ -76,4 +80,54 @@ export const useState = (initialValue) => {
 	const value = states[currentIndex];
 	stateIndex++;
 	return [value, setState];
+};
+
+export const useFlow = (callback, dependencies) => {
+	const component = getCurrentComponent();
+	if (!component) {
+		throw new Error("useFlow harus dipanggil di dalam fungsi komponen!");
+	}
+
+	if (lifecycleMap.has(component)) {
+		lifecycleMap.set(component, []);
+		lifecycleCleanup.set(component, []);
+	}
+	const prevDeps = lifecycleMap.get(component);
+	/**
+	 * cek apakah dependencies berubah
+	 */
+	const hasChanged =
+		!prevDeps || dependencies.some((dep, i) => dep !== prevDeps[i]);
+
+	if (hasChanged) {
+		/**
+		 * Jalankan clean up
+		 */
+		const cleanup = lifecycleCleanup.get(component);
+		if (hasFunction(cleanup)) {
+			cleanup();
+		}
+
+		/**
+		 * simpan clean up ke fuction
+		 */
+		const newCleanup = callback();
+		if (hasFunction(newCleanup)) {
+			lifecycleCleanup.set(component, newCleanup);
+		} else {
+			lifecycleCleanup.set(component, null);
+		}
+
+		lifecycleMap.set(component, dependencies);
+	}
+};
+
+export const triggerCleanupFlow = (component) => {
+	const lifecycles = lifecycleMap.get(component);
+	if (lifecycles) {
+		lifecycles.forEach((e) => {
+			e.cleanup && e.cleanup();
+			lifecycleMap.delete(component);
+		});
+	}
 };

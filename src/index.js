@@ -1,11 +1,16 @@
 import createElement from "./core/createElement";
 import { render } from "./core/dom";
-import { useGlobalState, useState } from "./core/hooks";
+import { useFlow, useGlobalState, useState } from "./core/hooks";
 import { createStore } from "./core/store";
 const store = createStore({ count: 0 });
 
 const App = () => {
 	const [count, setCount] = store.getState("count");
+
+	useFlow(() => {
+		console.log("Effect dijalankan! Count:", count);
+		return () => console.log("Cleanup effect untuk count:", count);
+	}, [count]);
 
 	return createElement(
 		"div",
