@@ -9,6 +9,7 @@ import {
 let previousVDOM = null;
 let rootContainer = null;
 let currentComponent = null;
+let updateTimeout;
 
 /**
  *
@@ -17,36 +18,66 @@ let currentComponent = null;
  */
 const renderer = (component, container) => {
 	const newVDOM = component();
+
 	if (!previousVDOM) {
 		mount(newVDOM, container);
 		rootContainer = container;
-		previousVDOM = newVDOM;
 	} else {
-		updateElement(container, previousVDOM, newVDOM);
+		updateElement(container, newVDOM, previousVDOM);
 	}
-	setCurrentComponent(() => render(component, container));
+
+	previousVDOM = newVDOM;
+	setCurrentComponent(component);
 };
 
+/**
+ *
+ * @returns {null/void}
+ */
 export const setUpdate = () => {
-	if (currentComponent) {
-		currentComponent();
+	if (!rootContainer || !previousVDOM || !hasFunction(currentComponent)) {
+		console.warn(
+			"setUpdate() gagal: rootContainer, previousVDOM, atau currentComponent tidak valid."
+		);
+		return;
 	}
+
+	// Pastikan rootContainer masih ada di DOM sebelum update
+	if (!document.body.contains(rootContainer)) {
+		console.warn(
+			"setUpdate() gagal: rootContainer sudah tidak ada di dalam DOM."
+		);
+		return;
+	}
+
+	// Hindari terlalu banyak update dalam waktu singkat (debounce)
+	clearTimeout(updateTimeout);
+	updateTimeout = setTimeout(() => {
+		try {
+			const newVDOM = currentComponent(); // Buat Virtual DOM baru
+			if (!newVDOM) {
+				console.warn("setUpdate() gagal: newVDOM tidak valid.");
+				return;
+			}
+
+			updateElement(rootContainer, newVDOM, previousVDOM); // Hanya update perubahan
+			previousVDOM = newVDOM; // Simpan VDOM terbaru
+		} catch (error) {
+			console.error("Terjadi kesalahan saat setUpdate():", error);
+		}
+	}, 0);
 };
 
 /**
  *
  * @param {function} component
+ *
  */
 export const setCurrentComponent = (component) => {
 	if (!hasFunction(component)) {
 		throw new Error("Invalid component: must be a function.");
 	}
-	if (!currentComponent) {
-		currentComponent = component;
-	} else {
-		previousVDOM = currentComponent;
-		currentComponent = component;
-	}
+	currentComponent = component;
 };
 
 /**
@@ -76,7 +107,7 @@ export const render = (component, container) => {
 	/**
 	 * Execute DOM
 	 */
-	container.innerHTML = "";
+	// container.innerHTML = "";
 	renderer(component, container);
 };
 /**
@@ -160,60 +191,136 @@ export const mount = (vdom, container) => {
 	mounted(vdom, container);
 };
 
-//////////
-
-export const updateElement = (parent, o, n, index = 0) => {
-	const exnode = parent.childNodes;
-	console.log(exnode);
-
-	if (!o) {
-		parent.appendChild(createElement(n));
-	} else if (!n) {
-		if (exnode) parent.removeChild(exnode);
-	} else if (hasDifferentNode(o, n)) {
-		try {
-			parent.replaceChild(createElement(n), exnode);
-		} catch (error) {
-			parent.replaceChild(createTextNode(n), exnode);
-		}
-	} else if (hasObject(n) && n.type) {
-		// if (exnode) updateAttributes(exnode, o, n);
-		const oldChildren = o.props?.children || [];
-		const newChildren = n.props?.children || [];
-		const maxLength = Math.max(oldChildren.length, newChildren.length);
-		for (let i = 0; i < maxLength; i++) {
-			updateElement(parent, oldChildren[i], newChildren[i], i);
-		}
+/**
+ *
+ * @param {object} vnode
+ * @returns {HTMLElement}
+ */
+const createElementUpdate = (vnode) => {
+	if (hasString(vnode) || hasNumber(vnode)) {
+		return document.createTextNode(String(vnode));
 	}
 
-	// mount(o, parent);
-};
-
-const hasDifferentNode = (oldVDOM, newVDOM) => {
-	return (
-		typeof oldVDOM !== typeof newVDOM ||
-		(typeof oldVDOM === "string" && oldVDOM !== newVDOM) ||
-		oldVDOM.type !== newVDOM.type
-	);
-};
-
-const updateAttributes = (node, oldProps = {}, newProps = {}) => {
-	for (let name in oldProps) {
-		if (!(name in newProps)) {
-			node.removeAttribute(name);
-		}
+	// Pastikan vnode memiliki type yang valid
+	if (!vnode.type || !hasString(vnode.type)) {
+		console.warn("Invalid vnode type:", vnode);
+		return document.createComment("Invalid vnode type"); // Gantikan dengan komentar
 	}
-	for (let name in newProps) {
-		if (oldProps[name] !== newProps[name]) {
-			if (typeof newProps[name] === "boolean") {
-				if (newProps[name]) {
-					node.setAttribute(name, "");
-				} else {
-					node.removeAttribute(name);
-				}
+
+	const element = document.createElement(vnode.type); // Fix: Gunakan `type` bukan `tag`
+
+	if (vnode.props && hasObject(vnode.props)) {
+		Object.entries(vnode.props).forEach(([key, value]) => {
+			if (key.startsWith("on") && hasFunction(value)) {
+				const eventType = key.slice(2).toLowerCase();
+				element.addEventListener(eventType, value);
+			} else if (key === "children") {
+				// Jangan set properti `children` secara langsung
+				return;
+			} else if (key in element) {
+				element[key] = value;
 			} else {
-				node.setAttribute(name, newProps[name]);
+				console.warn(`Unknown property "${key}" on element <${vnode.type}>`);
 			}
+		});
+	}
+
+	(vnode.props.children || []).forEach((child) =>
+		element.appendChild(createElementUpdate(child))
+	);
+
+	return element;
+};
+
+/**
+ *
+ * @param {HTMLElement} parent
+ * @param {object} newVNode
+ * @param {object} oldVNode
+ * @param {number} index
+ * @returns {void}
+ */
+export const updateElement = (parent, newVNode, oldVNode, index = 0) => {
+	// Validasi parent harus berupa elemen HTML
+	if (!hasHtmlElement(parent)) {
+		console.error("updateElement: Parent bukan elemen HTML yang valid", parent);
+		return;
+	}
+	if (!changed(newVNode, oldVNode)) return;
+
+	if (!oldVNode) {
+		parent.appendChild(createElementUpdate(newVNode));
+	} else if (!newVNode) {
+		if (parent.childNodes[index]) {
+			parent.removeChild(parent.childNodes[index]);
+		}
+	} else if (changed(oldVNode, newVNode)) {
+		if (hasString(oldVNode) && hasString(newVNode)) {
+			// Jika hanya teks yang berubah, cukup update teksnya tanpa replace elemen
+			parent.childNodes[index].nodeValue = newVNode;
+		} else if (parent.childNodes[index]) {
+			parent.replaceChild(
+				createElementUpdate(newVNode),
+				parent.childNodes[index]
+			);
+		} else {
+			parent.appendChild(createElementUpdate(newVNode));
+		}
+	} else if (newVNode.type) {
+		const maxChildren = Math.max(
+			(oldVNode.props.children || []).length,
+			(newVNode.props.children || []).length
+		);
+
+		for (let i = 0; i < maxChildren; i++) {
+			updateElement(
+				parent.childNodes[index] || parent, // Fix: Hindari `undefined`
+				newVNode.props.children?.[i],
+				oldVNode.props.children?.[i],
+				i
+			);
 		}
 	}
 };
+/**
+ *
+ * @param {object} node1
+ * @param {object} node2
+ * @returns {boolean}
+ */
+function changed(node1, node2) {
+	// Jika salah satu node null atau undefined, dianggap berubah
+	if (node1 == null || node2 == null) return true;
+
+	// Jika tipe data berbeda, jelas berubah
+	if (typeof node1 !== typeof node2) return true;
+
+	// Jika tipe data string atau number, bandingkan secara langsung
+	if (typeof node1 === "string" || typeof node1 === "number") {
+		return node1 !== node2;
+	}
+
+	// Pastikan kedua node adalah objek dengan properti type dan props
+	if (
+		typeof node1 !== "object" ||
+		typeof node2 !== "object" ||
+		!node1.type ||
+		!node2.type
+	) {
+		throw new Error("Invalid Virtual DOM structure detected.");
+	}
+
+	// Jika tipe elemen berbeda, berarti berubah
+	if (node1.type !== node2.type) return true;
+
+	// Cek perubahan props (tanpa JSON.stringify)
+	const oldProps = node1.props || {};
+	const newProps = node2.props || {};
+	const allKeys = new Set([...Object.keys(oldProps), ...Object.keys(newProps)]);
+
+	for (let key of allKeys) {
+		if (oldProps[key] !== newProps[key]) return true;
+	}
+
+	return false;
+}
