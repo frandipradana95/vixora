@@ -7,7 +7,7 @@ import { hasFunction, hasString } from "../core/helpers";
  * @param {object} component
  * @return {HTMLDivElement}
  */
-const Route = ({ path, component }) => {
+export const Route = ({ path, component }) => {
 	if (!hasString(path)) {
 		throw new Error("path must be filled with string");
 	}
@@ -17,5 +17,3 @@ const Route = ({ path, component }) => {
 	}
 	return createElement("div", { path }, createElement(component));
 };
-
-export default Route;

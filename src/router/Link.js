@@ -6,7 +6,7 @@ import createElement from "../core/createElement";
  * @param {object} children
  * @return {HTMLAnchorElement}
  */
-const Link = ({ path, children }) => {
+export const Link = ({ path, children }) => {
 	return createElement(
 		"a",
 		{
@@ -20,5 +20,3 @@ const Link = ({ path, children }) => {
 		children
 	);
 };
-
-export default Link;

@@ -1,5 +1,7 @@
 import createElement from "../core/createElement";
 import { useState } from "../core/hooks";
+export * from "./route";
+export * from "./Link";
 
 const Router = ({ children }) => {
 	const [currentPath, setCurrentPath] = useState(window.location.pathname);
