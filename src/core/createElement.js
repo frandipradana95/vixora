@@ -33,7 +33,7 @@ const createElement = (type, props = {}, ...children) => {
 			`Invalid props provided to createElement. Props must be an object or null. try checking your code again`
 		);
 	}
-
+	props = safeProps(props);
 	children = validationChildren(children);
 
 	if (hasFunction(type)) {
@@ -49,6 +49,15 @@ const createElement = (type, props = {}, ...children) => {
 			children,
 		},
 	};
+};
+
+const safeProps = (props) => {
+	const safe = Object.create(null);
+	for (let key in props) {
+		safe[key] = props[key];
+	}
+
+	return safe;
 };
 
 /**
