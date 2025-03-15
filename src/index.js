@@ -1,42 +1,18 @@
 import createElement from "./core/createElement";
 import { render } from "./core/dom";
-import { onMount, useFlow, useGlobalState, useState } from "./core/hooks";
+import { useState, useFlow, onMount } from "./core/hooks";
 import { createStore } from "./core/store";
-import Router from "./router";
-import Link from "./router/Link";
-import Route from "./router/route";
-const store = createStore({ count: 0 });
+export * from "./core/helpers";
 
-const Counter = () => {
-	const [count, setCount] = store.getState("count");
-
-	return createElement(
-		"div",
-		null,
-		createElement("h1", null, "Haloo"),
-		createElement("p", null, `count : ${count}`),
-		createElement("button", { onClick: () => setCount(count + 1) }, "tambah"),
-		createElement("br"),
-		createElement(Link, { path: "/" }, "Kembali ke Home")
-	);
+const Vixora = {
+	createElement,
+	render,
+	useFlow,
+	useState,
+	onMount,
+	createStore,
 };
 
-const Home = () => {
-	return createElement(
-		"div",
-		{},
-		createElement("h1", null, "Home Component"),
-		createElement(Link, { path: "/counter" }, "Pergi ke Counter")
-	);
-};
+export { createElement, render, useFlow, useState, onMount, createStore };
 
-const App = () => {
-	return createElement(
-		Router,
-		null,
-		createElement(Route, { path: "/", component: Home }),
-		createElement(Route, { path: "/counter", component: Counter })
-	);
-};
-
-render(() => createElement(App), document.getElementById("root"));
+export default Vixora;
